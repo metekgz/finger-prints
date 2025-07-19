@@ -104,8 +104,14 @@ class FingerWriter {
             const key = el.dataset.langKey;
             if (key in t) {
                 if (key === 'confidence') {
-                    const score = el.querySelector('span').textContent;
-                    el.innerHTML = `${t[key]} <span id="confidence_score">${score}</span>`;
+                    // Update only the text node to prevent destroying the span element
+                    // and invalidating the this.confidenceScore reference.
+                    el.childNodes[0].nodeValue = t[key] + ' ';
+                    
+                    // If the score is not a number (e.g., it's "N/A" or empty), update it with the new translation
+                    if (!this.confidenceScore.textContent.includes('%')) {
+                        this.confidenceScore.textContent = t.confidenceNA;
+                    }
                 } else {
                     el.innerHTML = t[key];
                 }
@@ -412,7 +418,7 @@ class FingerWriter {
         
         if (this.recognitionTimeout) clearTimeout(this.recognitionTimeout);
         this.recognizedOutput.textContent = '...';
-        this.confidenceScore.textContent = 'N/A';
+        this.confidenceScore.textContent = translations[this.currentLang].confidenceNA;
 
         setTimeout(() => {
             if (this.isInitialized) {

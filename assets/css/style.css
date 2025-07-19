@@ -260,17 +260,6 @@ header p {
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.3) !important;
 }
 
-/* Animation for drawing canvas */
-@keyframes canvasGlow {
-    0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
-    50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.8); }
-    100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.5); }
-}
-
-.canvas-active {
-    animation: canvasGlow 2s infinite;
-}
-
 /* AI Recognition Section */
 .ai-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -323,62 +312,3 @@ header p {
     font-weight: bold;
     color: #fbbf24;
 }
-
-.btn-magic {
-    background: linear-gradient(45deg, #8b5cf6, #7c3aed);
-    color: white;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-magic:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
-}
-
-.btn-magic::before {
-    content: '✨';
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    font-size: 1.2rem;
-    animation: sparkle 2s infinite;
-}
-
-@keyframes sparkle {
-    0%, 100% { transform: rotate(0deg) scale(1); opacity: 0.7; }
-    50% { transform: rotate(180deg) scale(1.2); opacity: 1; }
-}
-
-/* Loading animation for AI */
-.ai-loading {
-    background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
-    background-size: 200% 100%;
-    animation: gradient-flow 1.5s ease-in-out infinite;
-}
-
-@keyframes gradient-flow {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-
-/* AI Tips section */
-.ai-tips {
-    margin-top: 20px;
-    padding: 15px;
-    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-    border-radius: 10px;
-    color: white;
-}
-
-.ai-tips h5 {
-    margin-bottom: 10px;
-    font-size: 1rem;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-}
-
-.ai-tips p {
-    font-size: 0.9rem;
-    line-height: 1.6;
-    margin: 0;
-} 

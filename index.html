@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>✋ Finger Drawing</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -52,7 +52,7 @@
                 <span id="recognized_output">...</span>
             </div>
             <div class="confidence" data-lang-key="confidence">
-                Confidence: <span id="confidence_score">N/A</span>
+                Confidence: <span id="confidence_score"></span>
             </div>
         </div>
 
@@ -61,7 +61,7 @@
             <ul>
                 <li data-lang-key="instruction1">🎯 Point your <strong>index finger</strong> at the camera.</li>
                 <li data-lang-key="instruction2">☝️ Raise your finger to start drawing.</li>
-                <li data-lang-key="instruction3">👇 Lower your finger to stop drawing.</li>
+                <li data-lang-key="instruction3">🖐️ Close your hand to stop drawing.</li>
                 <li data-lang-key="instruction4">🧹 Use the "Clear" button to reset the canvas.</li>
             </ul>
         </div>
@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <script src="translations.js"></script>
-    <script src="script.js"></script>
+    <script src="assets/js/translations.js"></script>
+    <script src="assets/js/script.js"></script>
 </body>
 </html> 

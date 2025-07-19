@@ -14,7 +14,7 @@ const translations = {
         howToUse: "📝 How to Use:",
         instruction1: "🎯 Point your <strong>index finger</strong> at the camera.",
         instruction2: "☝️ Raise your finger to start drawing.",
-        instruction3: "👇 Lower your finger to stop drawing.",
+        instruction3: "🖐️ Close your hand to stop drawing.",
         instruction4: "🧹 Use the \"Clear\" button to reset the canvas.",
         statusWaiting: "Waiting for camera...",
         statusStarting: "Starting camera...",
@@ -32,7 +32,8 @@ const translations = {
         statusCleared: "Board cleared! 🧹",
         statusReadyNext: "Ready for next character!",
         statusDrawingOn: "Drawing is ON!",
-        statusDrawingOff: "Drawing is OFF."
+        statusDrawingOff: "Drawing is OFF.",
+        confidenceNA: "N/A"
     },
     tr: {
         title: "✋ Parmakla Çizim",
@@ -49,7 +50,7 @@ const translations = {
         howToUse: "📝 Nasıl Kullanılır:",
         instruction1: "🎯 İşaret parmağınızı kameraya doğrultun.",
         instruction2: "☝️ Çizime başlamak için parmağınızı kaldırın.",
-        instruction3: "👇 Çizimi durdurmak için parmağınızı indirin.",
+        instruction3: "🖐️ Çizimi durdurmak için elinizi kapatın.",
         instruction4: "🧹 Tuvali sıfırlamak için \"Temizle\" düğmesini kullanın.",
         statusWaiting: "Kamera bekleniyor...",
         statusStarting: "Kamera başlatılıyor...",
@@ -67,6 +68,7 @@ const translations = {
         statusCleared: "Tahta temizlendi! 🧹",
         statusReadyNext: "Sonraki karaktere hazır!",
         statusDrawingOn: "Çizim AÇIK!",
-        statusDrawingOff: "Çizim KAPALI."
+        statusDrawingOff: "Çizim KAPALI.",
+        confidenceNA: "—"
     }
 }; 
