@@ -42,25 +42,26 @@ class FingerWriter {
         this.isInitialized = false;
         this.recognitionTimeout = null;
         this.recognizedText = '';
-        
+        this.tesseractWorker = null;
+
         // Drawing settings
-        this.lineWidth = 3;
-        this.strokeColor = '#2563eb';
+        this.lineWidth = 3; // This one is for resize, might keep it dynamic
+        this.strokeColor = FINGER_WRITER_CONSTANTS.STROKE_COLOR;
         
         this.setupCanvas();
     }
 
     setupCanvas() {
         // Set canvas size
-        this.drawingCanvas.width = 640;
-        this.drawingCanvas.height = 400;
-        this.outputCanvas.width = 640;
-        this.outputCanvas.height = 400;
+        this.drawingCanvas.width = FINGER_WRITER_CONSTANTS.CANVAS_WIDTH;
+        this.drawingCanvas.height = FINGER_WRITER_CONSTANTS.CANVAS_HEIGHT;
+        this.outputCanvas.width = FINGER_WRITER_CONSTANTS.CANVAS_WIDTH;
+        this.outputCanvas.height = FINGER_WRITER_CONSTANTS.CANVAS_HEIGHT;
         
         // Drawing context settings
         this.drawingCtx.lineCap = 'round';
         this.drawingCtx.lineJoin = 'round';
-        this.drawingCtx.lineWidth = 8; // Increased line width for better recognition
+        this.drawingCtx.lineWidth = FINGER_WRITER_CONSTANTS.DRAWING_LINE_WIDTH;
         this.drawingCtx.strokeStyle = this.strokeColor;
         this.drawingCtx.fillStyle = '#ffffff';
         this.drawingCtx.fillRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
@@ -83,8 +84,8 @@ class FingerWriter {
         this.hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
+            minDetectionConfidence: FINGER_WRITER_CONSTANTS.HAND_CONFIDENCE,
+            minTrackingConfidence: FINGER_WRITER_CONSTANTS.HAND_CONFIDENCE
         });
 
         this.hands.onResults((results) => this.onResults(results));
@@ -154,7 +155,7 @@ class FingerWriter {
     stopCamera() {
         if (!this.isInitialized) return;
 
-        this.updateStatus('statusStopping', 'loading');
+        this.updateStatus('statusStopping', FINGER_WRITER_CONSTANTS.STATUS.LOADING);
 
         if (this.camera) {
             this.camera.stop();
@@ -173,16 +174,20 @@ class FingerWriter {
 
         this.startBtn.textContent = translations[this.currentLang].startCamera;
         this.startBtn.disabled = false;
-        this.updateStatus('statusOff', 'loading');
+        this.updateStatus('statusOff', FINGER_WRITER_CONSTANTS.STATUS.LOADING);
     }
 
     async startCamera() {
         try {
-            this.updateStatus('statusStarting', 'loading');
+            this.updateStatus('statusStarting', FINGER_WRITER_CONSTANTS.STATUS.LOADING);
             this.startBtn.disabled = true;
 
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: 640, height: 480, facingMode: 'user' }
+                video: { 
+                    width: FINGER_WRITER_CONSTANTS.VIDEO_WIDTH, 
+                    height: FINGER_WRITER_CONSTANTS.VIDEO_HEIGHT, 
+                    facingMode: 'user' 
+                }
             });
 
             this.videoElement.srcObject = stream;
@@ -191,20 +196,20 @@ class FingerWriter {
                 onFrame: async () => {
                     await this.hands.send({ image: this.videoElement });
                 },
-                width: 640,
-                height: 480
+                width: FINGER_WRITER_CONSTANTS.VIDEO_WIDTH,
+                height: FINGER_WRITER_CONSTANTS.VIDEO_HEIGHT
             });
 
             await this.camera.start();
             
-            this.updateStatus('statusActive', 'active');
+            this.updateStatus('statusActive', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
             this.startBtn.textContent = translations[this.currentLang].stopCamera;
             this.isInitialized = true;
             this.startBtn.disabled = false;
 
         } catch (error) {
             console.error('Camera error:', error);
-            this.updateStatus('statusError', 'error');
+            this.updateStatus('statusError', FINGER_WRITER_CONSTANTS.STATUS.ERROR);
             this.startBtn.textContent = translations[this.currentLang].startCamera;
             this.startBtn.disabled = false;
         }
@@ -249,7 +254,7 @@ class FingerWriter {
     drawPoint(x, y) {
         if (!this.isDrawing) {
             this.isDrawing = true;
-            this.updateStatus('statusDrawing', 'active');
+            this.updateStatus('statusDrawing', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
         }
         
         this.drawingCtx.beginPath();
@@ -269,7 +274,7 @@ class FingerWriter {
             this.isDrawing = false;
             this.lastPoint = null;
             if (this.isInitialized) {
-                this.updateStatus('statusReady', 'active');
+                this.updateStatus('statusReady', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
                 this.scheduleRecognition();
             }
         }
@@ -359,30 +364,42 @@ class FingerWriter {
         }
         this.recognitionTimeout = setTimeout(() => {
             this.recognizeHandwriting();
-        }, 1500); // Wait 1.5 seconds after drawing stops
+        }, FINGER_WRITER_CONSTANTS.RECOGNITION_DELAY); // Wait after drawing stops
+    }
+
+    async getTesseractWorker() {
+        if (this.tesseractWorker) {
+            return this.tesseractWorker;
+        }
+
+        this.updateStatus('statusRecognizing', FINGER_WRITER_CONSTANTS.STATUS.LOADING); // Use a more generic "initializing AI" message
+        
+        const worker = await Tesseract.createWorker('eng', 1, {
+            logger: m => console.log(m),
+        });
+        await worker.setParameters({
+            tessedit_pageseg_mode: '10', // PSM_SINGLE_CHAR
+            tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        });
+        
+        this.tesseractWorker = worker;
+        return this.tesseractWorker;
     }
 
     async recognizeHandwriting() {
-        this.updateStatus('statusRecognizing', 'loading');
+        this.updateStatus('statusRecognizing', FINGER_WRITER_CONSTANTS.STATUS.LOADING);
         
         const imageDataUrl = this.preprocessImage();
 
         if (!imageDataUrl) {
-            this.updateStatus('statusNoChar', 'error');
-            setTimeout(() => { if(this.isInitialized) this.updateStatus('statusReady', 'active'); }, 1500);
+            this.updateStatus('statusNoChar', FINGER_WRITER_CONSTANTS.STATUS.ERROR);
+            setTimeout(() => { if(this.isInitialized) this.updateStatus('statusReady', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE); }, FINGER_WRITER_CONSTANTS.STATUS_UPDATE_DELAY);
             return;
         }
 
         try {
-            const worker = await Tesseract.createWorker('eng', 1, {
-                logger: m => console.log(m), // Log progress
-            });
-            await worker.setParameters({
-                tessedit_pageseg_mode: '10', // PSM_SINGLE_CHAR
-                tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-            });
+            const worker = await this.getTesseractWorker();
             const { data } = await worker.recognize(imageDataUrl);
-            await worker.terminate();
 
             if (data.text && data.text.trim().length > 0) {
                 const recognizedChar = data.text.trim().replace(/\s/g, "")[0];
@@ -390,23 +407,23 @@ class FingerWriter {
                     this.recognizedText += recognizedChar;
                     this.recognizedOutput.textContent = this.recognizedText;
                     this.confidenceScore.textContent = `${Math.round(data.confidence)}%`;
-                    this.updateStatus('statusRecognized', 'active');
+                    this.updateStatus('statusRecognized', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
 
                     setTimeout(() => {
                         this.clearDrawingArea();
-                        this.updateStatus('statusReadyNext', 'active');
-                    }, 500);
+                        this.updateStatus('statusReadyNext', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
+                    }, FINGER_WRITER_CONSTANTS.POST_RECOGNITION_CLEAR_DELAY);
                 } else {
-                    this.updateStatus('statusNotRecognized', 'error');
-                    setTimeout(() => this.clearDrawingArea(), 500);
+                    this.updateStatus('statusNotRecognized', FINGER_WRITER_CONSTANTS.STATUS.ERROR);
+                    setTimeout(() => this.clearDrawingArea(), FINGER_WRITER_CONSTANTS.POST_RECOGNITION_CLEAR_DELAY);
                 }
             } else {
-                this.updateStatus('statusNotRecognized', 'error');
-                setTimeout(() => this.clearDrawingArea(), 500);
+                this.updateStatus('statusNotRecognized', FINGER_WRITER_CONSTANTS.STATUS.ERROR);
+                setTimeout(() => this.clearDrawingArea(), FINGER_WRITER_CONSTANTS.POST_RECOGNITION_CLEAR_DELAY);
             }
         } catch (error) {
             console.error('Recognition error:', error);
-            this.updateStatus('statusRecognitionFailed', 'error');
+            this.updateStatus('statusRecognitionFailed', FINGER_WRITER_CONSTANTS.STATUS.ERROR);
         }
     }
 
@@ -414,7 +431,7 @@ class FingerWriter {
         this.clearDrawingArea();
         this.recognizedText = '';
         
-        this.updateStatus('statusCleared', 'active');
+        this.updateStatus('statusCleared', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
         
         if (this.recognitionTimeout) clearTimeout(this.recognitionTimeout);
         this.recognizedOutput.textContent = '...';
@@ -422,17 +439,17 @@ class FingerWriter {
 
         setTimeout(() => {
             if (this.isInitialized) {
-                this.updateStatus('statusReady', 'active');
+                this.updateStatus('statusReady', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
             } else {
-                this.updateStatus('statusWaiting', 'loading');
+                this.updateStatus('statusWaiting', FINGER_WRITER_CONSTANTS.STATUS.LOADING);
             }
-        }, 1500);
+        }, FINGER_WRITER_CONSTANTS.STATUS_UPDATE_DELAY);
     }
 
     toggleDrawing() {
         this.isDrawingEnabled = !this.isDrawingEnabled;
         this.toggleDrawBtn.textContent = this.isDrawingEnabled ? translations[this.currentLang].drawingOn : translations[this.currentLang].drawingOff;
-        this.updateStatus(this.isDrawingEnabled ? 'statusDrawingOn' : 'statusDrawingOff', 'active');
+        this.updateStatus(this.isDrawingEnabled ? 'statusDrawingOn' : 'statusDrawingOff', FINGER_WRITER_CONSTANTS.STATUS.ACTIVE);
         if (!this.isDrawingEnabled) {
             this.stopDrawing();
         }
