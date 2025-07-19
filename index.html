@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✋ Finger Drawing</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>✋ Finger Drawing</h1>
+            <p>Draw in the air with your index finger! 🚀</p>
+        </header>
+
+        <div class="main-content">
+            <div class="video-section">
+                <h3>📹 Camera View</h3>
+                <div class="video-container">
+                    <video id="input_video" autoplay playsinline></video>
+                    <canvas id="output_canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="canvas-section">
+                <h3>✍️ Drawing Canvas</h3>
+                <div class="canvas-container">
+                    <canvas id="drawing_canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="start_btn" class="btn btn-primary">📷 Start Camera</button>
+            <button id="clear_btn" class="btn btn-secondary">🧹 Clear</button>
+            <button id="toggle_draw" class="btn btn-accent">✏️ Drawing: ON</button>
+        </div>
+
+        <div class="instructions">
+            <h4>📝 How to Use:</h4>
+            <ul>
+                <li>🎯 Point your <strong>index finger</strong> at the camera.</li>
+                <li>☝️ Raise your finger to start drawing.</li>
+                <li>👇 Lower your finger to stop drawing.</li>
+                <li>🧹 Use the "Clear" button to reset the canvas.</li>
+            </ul>
+        </div>
+
+        <div class="status">
+            <div id="status_indicator" class="status-dot"></div>
+            <span id="status_text">Waiting for camera...</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
