@@ -21,6 +21,13 @@ header {
     text-align: center;
     margin-bottom: 30px;
     color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-content {
+    text-align: left;
 }
 
 header h1 {
@@ -32,6 +39,21 @@ header h1 {
 header p {
     font-size: 1.2rem;
     opacity: 0.9;
+}
+
+.lang-switcher button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.lang-switcher button:hover {
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .main-content {

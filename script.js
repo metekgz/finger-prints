@@ -1,9 +1,11 @@
 class FingerWriter {
     constructor() {
+        this.currentLang = localStorage.getItem('finger-drawing-lang') || 'en';
         this.initializeElements();
         this.initializeVariables();
         this.initializeEventListeners();
         this.initializeMediaPipe();
+        this.setLanguage(this.currentLang);
     }
 
     initializeElements() {
@@ -20,6 +22,7 @@ class FingerWriter {
         this.startBtn = document.getElementById('start_btn');
         this.clearBtn = document.getElementById('clear_btn');
         this.toggleDrawBtn = document.getElementById('toggle_draw');
+        this.langBtn = document.getElementById('lang_btn');
         
         // Status elements
         this.statusDot = document.getElementById('status_indicator');
@@ -64,9 +67,10 @@ class FingerWriter {
     }
 
     initializeEventListeners() {
-        this.startBtn.addEventListener('click', () => this.startCamera());
+        this.startBtn.addEventListener('click', () => this.toggleCamera());
         this.clearBtn.addEventListener('click', () => this.clearCanvas());
         this.toggleDrawBtn.addEventListener('click', () => this.toggleDrawing());
+        this.langBtn.addEventListener('click', () => this.toggleLanguage());
         
         window.addEventListener('resize', () => this.handleResize());
     }
@@ -86,9 +90,89 @@ class FingerWriter {
         this.hands.onResults((results) => this.onResults(results));
     }
 
+    toggleLanguage() {
+        const newLang = this.currentLang === 'en' ? 'tr' : 'en';
+        this.setLanguage(newLang);
+    }
+
+    setLanguage(lang) {
+        this.currentLang = lang;
+        localStorage.setItem('finger-drawing-lang', lang);
+        const t = translations[lang];
+
+        document.querySelectorAll('[data-lang-key]').forEach(el => {
+            const key = el.dataset.langKey;
+            if (key in t) {
+                if (key === 'confidence') {
+                    const score = el.querySelector('span').textContent;
+                    el.innerHTML = `${t[key]} <span id="confidence_score">${score}</span>`;
+                } else {
+                    el.innerHTML = t[key];
+                }
+            }
+        });
+
+        // Update dynamic button texts not covered by simple keys
+        this.updateDynamicTexts();
+    }
+    
+    updateDynamicTexts() {
+        const t = translations[this.currentLang];
+        
+        // Start/Stop button
+        if (this.isInitialized) {
+            this.startBtn.innerHTML = t.stopCamera;
+        } else {
+            this.startBtn.innerHTML = t.startCamera;
+        }
+
+        // Drawing On/Off button
+        if (this.isDrawingEnabled) {
+            this.toggleDrawBtn.innerHTML = t.drawingOn;
+        } else {
+            this.toggleDrawBtn.innerHTML = t.drawingOff;
+        }
+
+        // Update status text with the correct language
+        // We'll update the status text generation in the updateStatus function directly
+    }
+
+    async toggleCamera() {
+        if (this.isInitialized) {
+            this.stopCamera();
+        } else {
+            await this.startCamera();
+        }
+    }
+
+    stopCamera() {
+        if (!this.isInitialized) return;
+
+        this.updateStatus('statusStopping', 'loading');
+
+        if (this.camera) {
+            this.camera.stop();
+            this.camera = null;
+        }
+
+        const stream = this.videoElement.srcObject;
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            this.videoElement.srcObject = null;
+        }
+
+        this.outputCtx.clearRect(0, 0, this.outputCanvas.width, this.outputCanvas.height);
+        this.stopDrawing();
+        this.isInitialized = false;
+
+        this.startBtn.textContent = translations[this.currentLang].startCamera;
+        this.startBtn.disabled = false;
+        this.updateStatus('statusOff', 'loading');
+    }
+
     async startCamera() {
         try {
-            this.updateStatus('Starting camera...', 'loading');
+            this.updateStatus('statusStarting', 'loading');
             this.startBtn.disabled = true;
 
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -107,13 +191,15 @@ class FingerWriter {
 
             await this.camera.start();
             
-            this.updateStatus('Camera active - Show your hand!', 'active');
-            this.startBtn.textContent = '📷 Camera Active';
+            this.updateStatus('statusActive', 'active');
+            this.startBtn.textContent = translations[this.currentLang].stopCamera;
             this.isInitialized = true;
+            this.startBtn.disabled = false;
 
         } catch (error) {
             console.error('Camera error:', error);
-            this.updateStatus('Camera access error!', 'error');
+            this.updateStatus('statusError', 'error');
+            this.startBtn.textContent = translations[this.currentLang].startCamera;
             this.startBtn.disabled = false;
         }
     }
@@ -157,7 +243,7 @@ class FingerWriter {
     drawPoint(x, y) {
         if (!this.isDrawing) {
             this.isDrawing = true;
-            this.updateStatus('Drawing... ✍️', 'active');
+            this.updateStatus('statusDrawing', 'active');
         }
         
         this.drawingCtx.beginPath();
@@ -177,7 +263,7 @@ class FingerWriter {
             this.isDrawing = false;
             this.lastPoint = null;
             if (this.isInitialized) {
-                this.updateStatus('Ready to draw!', 'active');
+                this.updateStatus('statusReady', 'active');
                 this.scheduleRecognition();
             }
         }
@@ -271,13 +357,13 @@ class FingerWriter {
     }
 
     async recognizeHandwriting() {
-        this.updateStatus('Recognizing character...', 'loading');
+        this.updateStatus('statusRecognizing', 'loading');
         
         const imageDataUrl = this.preprocessImage();
 
         if (!imageDataUrl) {
-            this.updateStatus('Draw a character first!', 'error');
-            setTimeout(() => { if(this.isInitialized) this.updateStatus('Ready to draw!', 'active'); }, 1500);
+            this.updateStatus('statusNoChar', 'error');
+            setTimeout(() => { if(this.isInitialized) this.updateStatus('statusReady', 'active'); }, 1500);
             return;
         }
 
@@ -298,23 +384,23 @@ class FingerWriter {
                     this.recognizedText += recognizedChar;
                     this.recognizedOutput.textContent = this.recognizedText;
                     this.confidenceScore.textContent = `${Math.round(data.confidence)}%`;
-                    this.updateStatus('Character recognized!', 'active');
+                    this.updateStatus('statusRecognized', 'active');
 
                     setTimeout(() => {
                         this.clearDrawingArea();
-                        this.updateStatus('Ready for next character!', 'active');
+                        this.updateStatus('statusReadyNext', 'active');
                     }, 500);
                 } else {
-                    this.updateStatus('Could not recognize character.', 'error');
+                    this.updateStatus('statusNotRecognized', 'error');
                     setTimeout(() => this.clearDrawingArea(), 500);
                 }
             } else {
-                this.updateStatus('Could not recognize character.', 'error');
+                this.updateStatus('statusNotRecognized', 'error');
                 setTimeout(() => this.clearDrawingArea(), 500);
             }
         } catch (error) {
             console.error('Recognition error:', error);
-            this.updateStatus('Recognition failed.', 'error');
+            this.updateStatus('statusRecognitionFailed', 'error');
         }
     }
 
@@ -322,7 +408,7 @@ class FingerWriter {
         this.clearDrawingArea();
         this.recognizedText = '';
         
-        this.updateStatus('Board cleared! 🧹', 'active');
+        this.updateStatus('statusCleared', 'active');
         
         if (this.recognitionTimeout) clearTimeout(this.recognitionTimeout);
         this.recognizedOutput.textContent = '...';
@@ -330,24 +416,25 @@ class FingerWriter {
 
         setTimeout(() => {
             if (this.isInitialized) {
-                this.updateStatus('Ready to draw!', 'active');
+                this.updateStatus('statusReady', 'active');
             } else {
-                this.updateStatus('Waiting for camera...', 'loading');
+                this.updateStatus('statusWaiting', 'loading');
             }
         }, 1500);
     }
 
     toggleDrawing() {
         this.isDrawingEnabled = !this.isDrawingEnabled;
-        this.toggleDrawBtn.textContent = this.isDrawingEnabled ? '✏️ Drawing: ON' : '⏸️ Drawing: OFF';
-        this.updateStatus(this.isDrawingEnabled ? 'Drawing is ON!' : 'Drawing is OFF.', 'active');
+        this.toggleDrawBtn.textContent = this.isDrawingEnabled ? translations[this.currentLang].drawingOn : translations[this.currentLang].drawingOff;
+        this.updateStatus(this.isDrawingEnabled ? 'statusDrawingOn' : 'statusDrawingOff', 'active');
         if (!this.isDrawingEnabled) {
             this.stopDrawing();
         }
     }
 
-    updateStatus(message, type) {
+    updateStatus(messageKey, type) {
         if (this.statusText) {
+            const message = translations[this.currentLang][messageKey] || messageKey;
             this.statusText.textContent = message;
         }
         if (this.statusDot) {

@@ -14,13 +14,18 @@
 <body>
     <div class="container">
         <header>
-            <h1>✋ Finger Drawing</h1>
-            <p>Draw in the air with your index finger! 🚀</p>
+            <div class="header-content">
+                <h1 data-lang-key="title">✋ Finger Drawing</h1>
+                <p data-lang-key="subtitle">Draw in the air with your index finger! 🚀</p>
+            </div>
+            <div class="lang-switcher">
+                <button id="lang_btn">TR / EN</button>
+            </div>
         </header>
 
         <div class="main-content">
             <div class="video-section">
-                <h3>📹 Camera View</h3>
+                <h3 data-lang-key="cameraView">📹 Camera View</h3>
                 <div class="video-container">
                     <video id="input_video" autoplay playsinline></video>
                     <canvas id="output_canvas"></canvas>
@@ -28,7 +33,7 @@
             </div>
 
             <div class="canvas-section">
-                <h3>✍️ Drawing Canvas</h3>
+                <h3 data-lang-key="drawingCanvas">✍️ Drawing Canvas</h3>
                 <div class="canvas-container">
                     <canvas id="drawing_canvas"></canvas>
                 </div>
@@ -36,37 +41,38 @@
         </div>
 
         <div class="controls">
-            <button id="start_btn" class="btn btn-primary">📷 Start Camera</button>
-            <button id="clear_btn" class="btn btn-secondary">🧹 Clear</button>
-            <button id="toggle_draw" class="btn btn-accent">✏️ Drawing: ON</button>
+            <button id="start_btn" class="btn btn-primary" data-lang-key="startCamera">📷 Start Camera</button>
+            <button id="clear_btn" class="btn btn-secondary" data-lang-key="clear">🧹 Clear</button>
+            <button id="toggle_draw" class="btn btn-accent" data-lang-key="drawingOn">✏️ Drawing: ON</button>
         </div>
 
         <div class="ai-section">
-            <h3>🤖 AI Recognition</h3>
+            <h3 data-lang-key="aiRecognition">🤖 AI Recognition</h3>
             <div class="recognized-text">
                 <span id="recognized_output">...</span>
             </div>
-            <div class="confidence">
+            <div class="confidence" data-lang-key="confidence">
                 Confidence: <span id="confidence_score">N/A</span>
             </div>
         </div>
 
         <div class="instructions">
-            <h4>📝 How to Use:</h4>
+            <h4 data-lang-key="howToUse">📝 How to Use:</h4>
             <ul>
-                <li>🎯 Point your <strong>index finger</strong> at the camera.</li>
-                <li>☝️ Raise your finger to start drawing.</li>
-                <li>👇 Lower your finger to stop drawing.</li>
-                <li>🧹 Use the "Clear" button to reset the canvas.</li>
+                <li data-lang-key="instruction1">🎯 Point your <strong>index finger</strong> at the camera.</li>
+                <li data-lang-key="instruction2">☝️ Raise your finger to start drawing.</li>
+                <li data-lang-key="instruction3">👇 Lower your finger to stop drawing.</li>
+                <li data-lang-key="instruction4">🧹 Use the "Clear" button to reset the canvas.</li>
             </ul>
         </div>
 
         <div class="status">
             <div id="status_indicator" class="status-dot"></div>
-            <span id="status_text">Waiting for camera...</span>
+            <span id="status_text" data-lang-key="statusWaiting">Waiting for camera...</span>
         </div>
     </div>
 
+    <script src="translations.js"></script>
     <script src="script.js"></script>
 </body>
 </html> 
