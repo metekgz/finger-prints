@@ -24,6 +24,10 @@ class FingerWriter {
         // Status elements
         this.statusDot = document.getElementById('status_indicator');
         this.statusText = document.getElementById('status_text');
+        
+        // AI elements
+        this.recognizedOutput = document.getElementById('recognized_output');
+        this.confidenceScore = document.getElementById('confidence_score');
     }
 
     initializeVariables() {
@@ -33,6 +37,8 @@ class FingerWriter {
         this.camera = null;
         this.hands = null;
         this.isInitialized = false;
+        this.recognitionTimeout = null;
+        this.recognizedText = '';
         
         // Drawing settings
         this.lineWidth = 3;
@@ -51,7 +57,7 @@ class FingerWriter {
         // Drawing context settings
         this.drawingCtx.lineCap = 'round';
         this.drawingCtx.lineJoin = 'round';
-        this.drawingCtx.lineWidth = this.lineWidth;
+        this.drawingCtx.lineWidth = 8; // Increased line width for better recognition
         this.drawingCtx.strokeStyle = this.strokeColor;
         this.drawingCtx.fillStyle = '#ffffff';
         this.drawingCtx.fillRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
@@ -172,6 +178,7 @@ class FingerWriter {
             this.lastPoint = null;
             if (this.isInitialized) {
                 this.updateStatus('Ready to draw!', 'active');
+                this.scheduleRecognition();
             }
         }
     }
@@ -187,12 +194,140 @@ class FingerWriter {
         this.outputCtx.fill();
     }
 
-    clearCanvas() {
+    preprocessImage() {
+        const sourceCanvas = this.drawingCanvas;
+        const ctx = sourceCanvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+        const data = imageData.data;
+        
+        let minX = sourceCanvas.width, minY = sourceCanvas.height, maxX = -1, maxY = -1;
+
+        // Find bounding box of the drawing
+        for (let y = 0; y < sourceCanvas.height; y++) {
+            for (let x = 0; x < sourceCanvas.width; x++) {
+                const i = (y * sourceCanvas.width + x) * 4;
+                // Check if pixel is not white
+                if (data[i] !== 255 || data[i+1] !== 255 || data[i+2] !== 255) {
+                    minX = Math.min(x, minX);
+                    maxX = Math.max(x, maxX);
+                    minY = Math.min(y, minY);
+                    maxY = Math.max(y, maxY);
+                }
+            }
+        }
+
+        if (maxX === -1) { // No drawing found
+            return null;
+        }
+
+        const charWidth = maxX - minX;
+        const charHeight = maxY - minY;
+        const padding = 20;
+        
+        const newSize = Math.max(charWidth, charHeight) + padding * 2;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = newSize;
+        tempCanvas.height = newSize;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Center the character on the new canvas
+        tempCtx.fillStyle = '#ffffff';
+        tempCtx.fillRect(0, 0, newSize, newSize);
+        tempCtx.drawImage(
+            sourceCanvas, 
+            minX, minY, charWidth, charHeight, // source rect
+            padding, padding, charWidth, charHeight // destination rect
+        );
+
+        // Binarize: make it pure black and white
+        const finalImageData = tempCtx.getImageData(0, 0, newSize, newSize);
+        const finalData = finalImageData.data;
+        for (let i = 0; i < finalData.length; i += 4) {
+            const isWhite = finalData[i] > 250 && finalData[i+1] > 250 && finalData[i+2] > 250;
+            if (!isWhite) {
+                finalData[i] = 0; // R
+                finalData[i+1] = 0; // G
+                finalData[i+2] = 0; // B
+            }
+        }
+        tempCtx.putImageData(finalImageData, 0, 0);
+        
+        return tempCanvas.toDataURL('image/png');
+    }
+
+    clearDrawingArea() {
         this.drawingCtx.fillStyle = '#ffffff';
         this.drawingCtx.fillRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
         this.stopDrawing();
+    }
+
+    scheduleRecognition() {
+        if (this.recognitionTimeout) {
+            clearTimeout(this.recognitionTimeout);
+        }
+        this.recognitionTimeout = setTimeout(() => {
+            this.recognizeHandwriting();
+        }, 1500); // Wait 1.5 seconds after drawing stops
+    }
+
+    async recognizeHandwriting() {
+        this.updateStatus('Recognizing character...', 'loading');
+        
+        const imageDataUrl = this.preprocessImage();
+
+        if (!imageDataUrl) {
+            this.updateStatus('Draw a character first!', 'error');
+            setTimeout(() => { if(this.isInitialized) this.updateStatus('Ready to draw!', 'active'); }, 1500);
+            return;
+        }
+
+        try {
+            const worker = await Tesseract.createWorker('eng', 1, {
+                logger: m => console.log(m), // Log progress
+            });
+            await worker.setParameters({
+                tessedit_pageseg_mode: '10', // PSM_SINGLE_CHAR
+                tessedit_char_whitelist: 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+            });
+            const { data } = await worker.recognize(imageDataUrl);
+            await worker.terminate();
+
+            if (data.text && data.text.trim().length > 0) {
+                const recognizedChar = data.text.trim().replace(/\s/g, "")[0];
+                if (recognizedChar) {
+                    this.recognizedText += recognizedChar;
+                    this.recognizedOutput.textContent = this.recognizedText;
+                    this.confidenceScore.textContent = `${Math.round(data.confidence)}%`;
+                    this.updateStatus('Character recognized!', 'active');
+
+                    setTimeout(() => {
+                        this.clearDrawingArea();
+                        this.updateStatus('Ready for next character!', 'active');
+                    }, 500);
+                } else {
+                    this.updateStatus('Could not recognize character.', 'error');
+                    setTimeout(() => this.clearDrawingArea(), 500);
+                }
+            } else {
+                this.updateStatus('Could not recognize character.', 'error');
+                setTimeout(() => this.clearDrawingArea(), 500);
+            }
+        } catch (error) {
+            console.error('Recognition error:', error);
+            this.updateStatus('Recognition failed.', 'error');
+        }
+    }
+
+    clearCanvas() {
+        this.clearDrawingArea();
+        this.recognizedText = '';
+        
         this.updateStatus('Board cleared! 🧹', 'active');
         
+        if (this.recognitionTimeout) clearTimeout(this.recognitionTimeout);
+        this.recognizedOutput.textContent = '...';
+        this.confidenceScore.textContent = 'N/A';
+
         setTimeout(() => {
             if (this.isInitialized) {
                 this.updateStatus('Ready to draw!', 'active');

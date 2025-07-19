@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 </head>
 <body>
     <div class="container">
@@ -38,6 +39,16 @@
             <button id="start_btn" class="btn btn-primary">📷 Start Camera</button>
             <button id="clear_btn" class="btn btn-secondary">🧹 Clear</button>
             <button id="toggle_draw" class="btn btn-accent">✏️ Drawing: ON</button>
+        </div>
+
+        <div class="ai-section">
+            <h3>🤖 AI Recognition</h3>
+            <div class="recognized-text">
+                <span id="recognized_output">...</span>
+            </div>
+            <div class="confidence">
+                Confidence: <span id="confidence_score">N/A</span>
+            </div>
         </div>
 
         <div class="instructions">
